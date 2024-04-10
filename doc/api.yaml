@@ -1,0 +1,755 @@
+openapi: 3.0.0
+
+info:
+  title: WASAPhoto
+  description: |
+    Keep in touch with your friends
+    by sharing photos of special moments,
+    thanks to WASAPhoto! You can
+    upload your photos directly from your PC,
+    and they will be visible to everyone following you.
+  version: 1.0.0
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: login
+    description: Operations related to user login
+  - name: set
+    description: Operations related to user settings
+  - name: following
+    description: Operations related to user following
+  - name: banned
+    description: Operations related to user banning
+  - name: photo
+    description: Operations related to user photos
+  - name: like
+    description: Operations related to user likes
+  - name: comment
+    description: Operations related to user comments
+  - name: get
+    description: Operations related to getters
+  - name: search
+    description: Operations related to search
+
+paths:
+  /session/:
+    post:
+      tags: [login]
+      summary: Logs in the user
+      description: |-
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/username"
+        required: true
+      responses:
+        #OK
+        '200':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/username'}
+        #Created
+        '201':
+          description: User sign-in action successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/username'}
+        #BadRequest
+        '400':
+          description: The request was not valid. The user must log in.
+
+        #Internal Server Error
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+ 
+        
+  
+  /settings/:
+    put:
+      operationId: setMyUserName
+      tags: [set]
+      summary: changes the username
+      description: |-
+        The user sets their own username
+      requestBody:
+        description: updated username
+        required: true
+        content:
+          application/json:
+            schema: 
+              { $ref: "#/components/schemas/user"}
+      responses:
+        #OK
+        '200':
+          description: The username has been updated successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/user'}
+        #CREATED
+        '201':
+          description: The username has been created successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/user'}
+        '400':
+          description: The request was not valid. Invalid username
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+          
+  /following/{id}/:
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+
+    put:
+      operationId: followUser
+      tags: [following]
+      summary: Follows a user
+      description: |-
+        The user follows another user
+      responses: 
+        #No Content
+        '204':
+          description: The user has been followed successfully
+        #BadRequest
+        '400':
+          description: Invalid operatation, maybe invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #Forbidden
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      operationId: unfollowUser
+      tags: [following]
+      summary: Unfollows a user
+      description: |-
+        The user unfollows another user
+      responses: 
+        #No Content
+        '204':
+          description: The user has been unfollowed successfully
+        #BadRequest
+        '400':
+          description: Invalid operatation, maybe invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        
+  /ban/{id}/:
+
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+    
+    put:
+      operationId: banUser
+      tags: [banned]
+      summary: Bans a user
+      description: |-
+        The user bans another user
+      responses: 
+        #No Content
+        '204':
+          description: The user has been banned successfully
+        #BadRequest
+        '400':
+          description: Invalid operation, maybe invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'    
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      operationId: unbanUser
+      tags: [banned]
+      summary: Unbans a user
+      description: |-
+        The user unbans another user
+      responses: 
+        #No Content
+        '204':
+          description: The user has been unbanned successfully
+        #BadRequest
+        '400':
+          description: Invalid operation, maybe invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+  /photos/:
+    post:
+      operationId: uploadPhoto
+      tags: [photo]
+      summary: Uploads a photo
+      description: |-
+        The user uploads a photo
+      requestBody:
+        description: binary image file
+        required: true
+        content:
+          image/*:
+            schema: 
+              $ref: "#/components/schemas/BinaryImage"
+      responses:
+        #CREATED
+        '201':
+          description: The photo has been created successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/photo'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid photo formatting
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /photos/{pid}/:
+    
+      parameters:
+        - $ref: "#/components/parameters/pid"
+      
+      delete:
+        operationId: deletePhoto
+        tags: [photo]
+        summary: Deletes a photo
+        description: |-
+          The user deletes a photo
+        responses:
+          #No Content
+          '204':
+            description: The photo has been deleted successfully
+          #BadRequest
+          '400':
+            description: The request was not valid. probably Invalid photo id
+          #Unauthorized
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          #InternalServerError
+          '500':
+            $ref: '#/components/responses/InternalServerError'
+
+    
+  /likes/{pid}/:
+  
+    parameters:
+      - $ref: "#/components/parameters/pid"
+    
+    put:
+      operationId: likePhoto
+      tags: [like]
+      summary: Likes a photo
+      description: |-
+        The user likes a photo
+      responses:
+        #No Content
+        '204':
+          description: The photo has been liked successfully
+        #BadRequest
+        '400':
+          description: Invalid operation, maybe invalid photo id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      operationId: unlikePhoto
+      tags: [like]
+      summary: Unlikes a photo
+      description: |-
+        The user unlikes a photo
+      responses:
+        #No Content
+        '204':
+          description: The photo has been unliked successfully
+        #BadRequest
+        '400':
+          description: Invalid operation, maybe invalid photo id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+
+  /photos/{pid}/comment/:
+    
+      parameters:
+        - $ref: "#/components/parameters/pid"
+      
+      post:
+        operationId: commentPhoto
+        tags: [comment]
+        summary: Adds a comment
+        description: |-
+          The user adds a comment to a photo
+        requestBody:
+          description: Comment details
+          required: true
+          content:
+            text/plain:
+              schema: 
+                $ref: "#/components/schemas/text"
+        responses:
+          #CREATED
+          '201':
+            description: The comment has been created successfully
+            content: 
+              application/json:
+                schema: { $ref: '#/components/schemas/comment'}
+          #BadRequest
+          '400':
+            description: The request was not valid. probably Invalid comment formatting
+          #Unauthorized
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          #Forbidden
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          #InternalServerError
+          '500':
+            $ref: '#/components/responses/InternalServerError'
+    
+    
+  /photos/{pid}/comment/{comment_id}/:
+      
+        parameters:
+          - $ref: "#/components/parameters/pid"
+          - $ref: "#/components/parameters/comment_id"
+        
+        delete:
+          operationId: uncommentPhoto
+          tags: [comment]
+          summary: uncomment a comment
+          description: |-
+            The user uncomment a comment
+          responses:
+            #No Content
+            '204':
+              description: The comment has been deleted successfully
+            #BadRequest
+            '400':
+              description: The request was not valid. probably Invalid comment id
+            #Unauthorized
+            '401':
+              $ref: '#/components/responses/Unauthorized'
+            #Forbidden
+            '403':
+              $ref: '#/components/responses/Forbidden'
+            #InternalServerError
+            '500':
+              $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}/:
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+    get:
+      operationId: getUserProfile
+      tags: [get]
+      summary: Gets a Full user
+      description: |-
+        The user by the ID
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/FullUser'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /users/{id}/following/:
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+    get:
+      operationId: getFollowingList
+      tags: [get]
+      summary: Gets a list of users that the user is following
+      description: |-
+        The user by the ID
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/user_list'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}/followers/:
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+    get:
+      operationId: getFollowersList
+      tags: [get]
+      summary: Gets a list of users that are following the user
+      description: |-
+        The user by the ID
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/user_list'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /users/{id}/photo/:
+    parameters:
+      - $ref: "#/components/parameters/user_id"
+    get:
+      operationId: getPhotosList
+      tags: [get]
+      summary: Gets a list of photos that the user has uploaded
+      description: |-
+        The user by the ID
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/photo_list'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+
+    
+  /stream/:
+    get:
+      operationId: getMyStream
+      tags: [get]
+      summary: Gets a list of photos from the users that the user is following
+      description: |-
+        The user by the ID
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/photo_list'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /search/:
+    get:
+      operationId: search
+      tags: [search]
+      summary: Searches for a user
+      description: |-
+        The user by the ID
+      parameters:
+        - name: username
+          in: query
+          description: The username of the user
+          required: true
+          schema:
+            $ref: "#/components/schemas/username"
+      responses:
+        #OK
+        '200':
+          description: The user has been retrieved successfully
+          content: 
+            application/json:
+              schema: { $ref: '#/components/schemas/user_list'}
+        #BadRequest
+        '400':
+          description: The request was not valid. probably Invalid user id
+        #Unauthorized
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        #InternalServerError
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+
+components:
+  responses:
+    #401
+    Unauthorized:
+      description: The request was not authorized. The user must log in.
+
+    #403
+    Forbidden:
+      description: The request was not authorized. The user does not have the necessary permissions.
+
+    #500
+    InternalServerError:
+      description: An error occurred on the server. Please try again later.
+   
+
+###################PAMETERS####################
+  parameters:
+
+    user_id:
+      name: id
+      in: path
+      description:  it's a user id
+      required: true
+      schema:
+        $ref: "#/components/schemas/user_id"
+      
+    comment_id:
+      name: comment_id
+      in: path
+      description: it's a comment's id
+      required: true
+      schema:
+        $ref: "#/components/schemas/comment"
+      
+    pid:
+      name: pid
+      in: path
+      description: it's a photo's id
+      required: true
+      schema:
+        $ref: "#/components/schemas/pid"
+    
+
+      
+        
+
+###################SCHEMAS####################
+  schemas:
+
+    user_id:
+      description: String between 3-16 characters
+      type: string
+      pattern: '^.*?$'
+      example: MickeyMouse
+      minLength: 3
+      maxLength: 16
+      readOnly: true
+
+
+    username:
+      title: username
+      description: "This object represents the name of the user"
+      type: string
+      pattern: '^.*?$'
+      example: MickeyMouse
+      minLength: 3
+      maxLength: 16
+      
+    
+    user:
+      title: user
+      description: "This object represents an user"
+      type: object
+      properties:
+        user_id: 
+          $ref: "#/components/schemas/user_id"
+        username:
+          $ref: "#/components/schemas/username"
+      
+
+    pid:
+      title: pid
+      description: "This object represents the id of the photo"
+      type: number
+      format: int64
+      example: 1234
+      readOnly: true
+
+    comment_id:
+      title: comment_id
+      description: "This object represents the id of the comment"
+      type: number
+      format: int64
+      example: 1234
+      readOnly: true
+
+    FullUser:
+      title: fullUser
+      description: "This object represents a single user"
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/user_id"
+        username:
+          $ref: "#/components/schemas/username"
+        followerList:
+          $ref: "#/components/schemas/user_list"
+        followingList:
+          $ref: "#/components/schemas/user_list"
+        bannedList:
+          $ref: "#/components/schemas/user_list"
+        photoList:
+          $ref: "#/components/schemas/photo_list"
+      
+
+    photo:
+      title: photo
+      description: "This object represents a single picture/photo"
+      type: object
+      properties:
+        user_id:
+          $ref: "#/components/schemas/user_id"
+        username:
+          $ref: "#/components/schemas/username"
+        pid:
+          $ref: "#/components/schemas/pid"
+        likes:
+          description: "users that liked the photo"
+          type: array
+          minItems: 0
+          maxItems: 100
+          items: 
+            $ref: "#/components/schemas/user_id"
+        comments:
+          description: this is all the comments of this photo
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:  
+            $ref: "#/components/schemas/comment"
+        date:
+          description: Date and time of upload.
+          type: string
+          format: date-time
+          example: 2019-02-21T17:32:28Z
+          readOnly: true
+          minLength: 1
+          maxLength: 2200
+          
+        
+    text:
+      description: Comment text.
+      type: string
+      pattern: '^.*?$'
+      minLength: 1
+      maxLength: 2200
+      example: "I love this your dog!"
+    
+
+
+    comment:
+      title: comment
+      description: "This object represents a single comment"
+      properties:
+        owner:
+          $ref: "#/components/schemas/user_id"
+        surname:
+          $ref: "#/components/schemas/username"
+        pid:
+          $ref: "#/components/schemas/pid"
+        comment_id:
+          $ref : "#/components/schemas/comment_id"
+        text:
+          $ref: "#/components/schemas/text"
+        date:
+          description: Date and time of upload.
+          type: string
+          format: date-time
+          example: 2019-02-21T17:32:28Z
+          minLength: 1
+          maxLength: 2200
+          readOnly: true
+
+    BinaryImage:
+      description: Binary image.
+      type: string
+      format: binary
+      minLength: 4
+      maxLength: 65535
+      example: iVBORw0KGgoAAAANSU... 
+          
+
+    user_list:
+      title: user_list
+      description: this list contains all the users that I follow
+      type: array
+      minItems: 0
+      maxItems: 100
+      items:
+        $ref: "#/components/schemas/user"
+
+    photo_list:
+      title: photoList
+      description: this list contains all the photos that I follow
+      type: array
+      minItems: 0
+      maxItems: 100
+      items:
+        $ref: "#/components/schemas/photo"
+
+      
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+

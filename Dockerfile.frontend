@@ -1,0 +1,23 @@
+#sets node:lts(long term support) as base image to be used as "frontend_compiler"
+FROM node:lts as frontend_compiler
+
+#sets the current working directory inside the container to /src/webui.
+#(If the directory does not exist, it will be created.)
+WORKDIR /src/webui
+
+#copies the files and directories present in the webui of your host system into
+#the current directory of the container(which is src/webui due to previous line)
+COPY webui .
+
+#runs the command npm run build-prod inside the container.(running the application)
+RUN npm run build-prod
+
+#start of a new build stage "nginx:latest"(most recent version) 
+FROM nginx:latest
+
+#copies files from the /src/webui/dist directory of the frontend_compiler
+#to the /usr/share/nginx/html directory
+COPY --from=frontend_compiler /src/webui/dist /usr/share/nginx/html
+
+#indicates that the service in the container will be available on port 80.
+EXPOSE 80
